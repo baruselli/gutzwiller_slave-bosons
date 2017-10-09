@@ -1,0 +1,37 @@
+##########
+# your machine name
+##########
+
+#FC   = gfortran
+FC   = ifort -fpp -Dcmplx
+#FC = mpif90
+#FC77 = ifort
+
+# Optimized ifort 10
+#FFLAGS   = -O2 -axS -arch SSE2 -mtune=core2
+#F77FLAGS = -O2 -axS -arch SSE2 -mtune=core2
+# Optimized ifort 11
+#FFLAGS   = -C -g -O2 -xSSSE3 -arch SSSE3 -mssse3  -static-intel 
+FFLAGS   = -O2 -xSSSE3 -arch SSSE3 -mssse3  -static-intel 
+#FFLAGS   = -O1 
+#FFLAGS   = -O2 -x f95-cpp-input
+#F77FLAGS = -p -g -O2 -xSSSE3 -arch SSSE3 -mssse3
+
+# Debug
+#FFLAGS   = -g -C -O0
+#F77FLAGS = -g -C -O0
+
+#TARGET = nrg_nos
+#TARGET = tki
+
+
+#LIBS =  -lmkl_intel_lp64  -lmkl_lapack95_lp64  -lmkl_sequential -lmkl_core				#serial mkl
+#LIBS =   -lmkl_lapack  -lmkl_sequential -lmkl_core				#serial mkl
+LIBS =   -heap-arrays 10 -lmkl_intel_lp64 -lmkl_lapack95_lp64  -lmkl_intel_thread -lmkl_sequential -lmkl_core -openmp -lpthread  	#openmp mkl
+#LIBS =    -lmkl_intel_lp64 -lmkl_lapack95_lp64  -lmkl_intel_thread -lmkl_sequential -lmkl_core -openmp -lpthread  	#openmp mkl
+#LIBS = -traceback -g -check -gen-interfaces -warn interfaces -fpe0 -C   -lmkl_intel_lp64 -lmkl_lapack95_lp64  -lmkl_intel_thread -lmkl_sequential -lmkl_core -openmp -lpthread  	#openmp mkl
+#LIBS = -heap-arrays -traceback -g -check -gen-interfaces -warn interfaces -C   -lmkl_intel_lp64 -lmkl_lapack95_lp64  -lmkl_intel_thread -lmkl_sequential -lmkl_core -openmp -lpthread  	#openmp mkl
+#LIBS = -lmkl -lmkl_lapack -lmkl_intel_thread -lguide -lpthread
+#LIBS = -latlas -llapack -lblas -lgfortran											#atlas
+#LIBS=  -lmkl_intel_lp64  -lmkl_sequential -lmkl_core
+
