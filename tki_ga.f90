@@ -21420,7 +21420,8 @@ end subroutine do_dissipation
 real(kind=idp) function dpdr(r)
 real(kind=idp),intent(in):: r
 
-dpdr=-4*r/(2-r**2)**2
+if (scf_type=='ga') dpdr=-4*r/(2-r**2)**2
+if (scf_type=='sb') dpdr=-2*r
 
 end function dpdr
 !!!!!!!!
@@ -21435,14 +21436,16 @@ end function drdp_r
 real(kind=idp) function p_r(r)
 real(kind=idp),intent(in):: r
 
-p_r=(1-r**2)/(1-r**2/2)
+if (scf_type=='ga') p_r=(1-r**2)/(1-r**2/2)
+if (scf_type=='sb') p_r=(1-r**2)
 
 end function p_r
 !!!!!!!!
 real(kind=idp) function r_p(p)
 real(kind=idp),intent(in):: p
 
-r_p=sqrt((1-p)/(1-p/2))
+if (scf_type=='ga') r_p=sqrt((1-p)/(1-p/2))
+if (scf_type=='sb') r_p=sqrt(1-p)
 
 end function r_p
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -21609,12 +21612,14 @@ if (time_integr=='rks')    call range_integrate(comm,yp_f,t_out,t,y,yp,flag)
 
     call compute_E (n_tot,nf_t,nc_t,Ec_t,Ef_t,V_t,V_t2,E0,E1,P_t,b_t,psi_t,Ec0_tot,Ec1_tot,Tc_tot,Ef0_tot,Ef1_tot,Tf_tot,V_tot)
 
-!check that P=nf is conserved by the time evolution
+!check that P=nf (ga) or b**2+nf (sb) is conserved by the time evolution
     delta_p=0
     do ind=0,nx*ny*nz-1
-    delta_p=max(delta_p,abs(nf_t(ind)-P_t(ind)))
+    if (scf_type=='ga')    delta_p=max(delta_p,abs(nf_t(ind)-P_t(ind)))
+    if (scf_type=='sb')    delta_p=max(delta_p,abs(nf_t(ind)+b_t(ind)**2-1))
     enddo
-    if (delta_p>1e-4) print *, "Warning P-nf=  ", delta_p
+    if (scf_type=='ga' .and. delta_p>1e-4) print *, "Warning |P-nf|=  ", delta_p
+    if (scf_type=='sb' .and. delta_p>1e-4) print *, "Warning |b**2+nf-1=|  ", delta_p
 !check that total number of particles is conserved by the time evolution
     if (abs(n_tot-n_tot_init)>1e-3) print *, "Warning n_tot=  ", n_tot
 
