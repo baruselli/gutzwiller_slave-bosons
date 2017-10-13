@@ -1,10 +1,12 @@
 !include 'rksuite.f90'
 include 'rkf45_new.f90'
 include 'rksuite_90.f90'
+include 'rkutta_santoro.f90'
 !C4W95C
 program tki
 !  use MKL_DFTI, forget => DFTI_DOUBLE, DFTI_DOUBLE => DFTI_DOUBLE_R
 use rksuite_90
+use mod_rkutta
 
 IMPLICIT NONE
 
@@ -21451,7 +21453,7 @@ end function r_p
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 subroutine time_evolution
-real ( kind = idp ), allocatable::theta_t(:),P_t(:),y(:),yp(:),b_t(:),nf_t(:),thresholds(:),dP_dt(:),dtheta_dt(:),e00(:),nc_t(:),Ec_t(:),Ef_t(:),V_t(:),V_t2(:) !,yp_f(:)
+real ( kind = idp ), allocatable::theta_t(:),P_t(:),y(:),yp(:),b_t(:),nf_t(:),thresholds(:),dP_dt(:),dtheta_dt(:),e00(:),nc_t(:),Ec_t(:),Ef_t(:),V_t(:),V_t2(:),y_out(:) !,yp_f(:)
 complex ( kind = idpc ), allocatable::psi_t(:,:,:),Ham0(:,:),w0(:,:)
   integer ( kind = 4 ) flag,i_step
   real ( kind = idp ):: relerr,abserr,t,t_out,t_start,E0,E1,n_tot,delta_P,n_tot_init,Ec0_tot,Ec1_tot,Tc_tot,Ef0_tot,Ef1_tot,Tf_tot,V_tot
@@ -21498,7 +21500,7 @@ allocate(H_t(0:n_step))
 allocate(Ham0(0:total_size-1,0:total_size-1))
 allocate(w0(0:total_size-1,0:total_size-1))
 allocate(e00(0:total_size-1))
-
+if (time_integr=='rgs') allocate(y_out(neqn))
 
 tolerance=tolerance_rksuite
 thresholds=threshold_rksuite
@@ -21549,6 +21551,7 @@ enddo
  call r8_f2 ( t, y, yp )				!computes derivative at t=0 given y at t=0
  call y_to_Ptheta(dP_dt,dtheta_dt,yp)		!unpacks initial derivatives
 if (time_integr=='rks') call setup(comm,t_start,y,t_stop,tolerance,thresholds)		!setup for rksuite
+if (time_integr=='rgs') call RK_INITIALIZE(neqn)					!setup
 
  call compute_E (n_tot_init,nf_t,nc_t,Ec_t,Ef_t,V_t,V_t2,E0,E1,P_t,b_kr_0,psi_t,Ec0_tot,Ec1_tot,Tc_tot,Ef0_tot,Ef1_tot,Tf_tot,V_tot)	!initial energy and occupation
 
@@ -21604,6 +21607,9 @@ print *, "Starting t loop"
 
 if (time_integr=='rkf')    call r8_rkf45 ( r8_f2, neqn, y, yp, t, t_out, relerr, abserr, flag )
 if (time_integr=='rks')    call range_integrate(comm,yp_f,t_out,t,y,yp,flag)
+if (time_integr=='rgs')    CALL RK_A4_TMESH(r8_f2n, neqn, 1, t, t_out, y, y_out, t_out-t, tolerance_rksuite, 10)
+!		   SUBROUTINE RK_A4_TMESH(DERIVS, N,   Nt, t1,t2,   Y1, Y2,    h_i,     acc,              maxsteps )
+if (time_integr=='rgs')    y=y_out
 
     call y_to_Pthetapsi(P_t,theta_t,psi_t,y)
     do ind=0,nx*ny*nz-1
@@ -21659,7 +21665,8 @@ enddo
 enddo
 enddo
 
-
+if (time_integr=='rgs') CALL CRK_FINALIZE
+if (time_integr=='rgs') deallocate(y_out)
 deallocate(y)
 deallocate(yp)
 deallocate(thresholds)
@@ -21737,6 +21744,17 @@ deallocate(psi_t)
 time_r8f2=time_r8f2+secnds(0.0)-time_r8f2_0
 
 end subroutine r8_f2
+
+
+!!!!!!
+!wrapper for r8_f2 that also takes neqn in input
+SUBROUTINE r8_f2N( neqn, t, y, yp )
+real ( kind = idp ):: t,y(neqn),yp(neqn)
+integer::neqn
+
+ call r8_f2(t,y,yp)
+
+end subroutine r8_f2n
 
 !!!!!!
 !wrapper for r8_f2: function that returns yp
